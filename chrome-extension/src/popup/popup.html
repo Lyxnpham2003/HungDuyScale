@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <title>Cân HR-250A</title>
+    <link rel="stylesheet" href="../ui.css" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="row">
+      <span id="statusDot" class="dot"></span>
+      <div>
+        <h1>Cân HR-250A</h1>
+        <div id="statusText" class="muted">–</div>
+      </div>
+      <span class="spacer"></span>
+      <span id="simBadge" class="badge badge-sim hidden" title="Hộp cân đang ở chế độ mô phỏng, không phải số cân thật">MÔ PHỎNG</span>
+      <button id="settingsBtn" class="btn btn-icon" title="Cài đặt">⚙</button>
+    </header>
+
+    <main>
+      <section id="setupCard" class="card hidden">
+        <p>Chưa cấu hình IP của hộp cân.</p>
+        <button id="openSettingsBtn" class="btn btn-primary">Mở cài đặt</button>
+      </section>
+
+      <section class="card weight-card">
+        <div class="weight">
+          <span id="weightValue" class="weight-value">–</span>
+          <span id="weightUnit" class="weight-unit"></span>
+        </div>
+        <div class="row">
+          <span id="readingStatus" class="badge">–</span>
+          <span class="spacer"></span>
+          <span id="updatedAt" class="muted"></span>
+        </div>
+        <div id="warning" class="notice notice-warn hidden"></div>
+        <div id="connectRow" class="row hidden" style="margin-top: 8px">
+          <span id="connectError" class="muted"></span>
+          <span class="spacer"></span>
+          <button id="connectBtn" class="btn btn-primary">Kết nối</button>
+        </div>
+      </section>
+
+      <section class="actions">
+        <button id="zeroBtn" class="btn" title="Gửi lệnh Z (RE-ZERO) xuống cân">Về 0</button>
+        <button id="tareBtn" class="btn" title="Gửi lệnh T (trừ bì) xuống cân">Trừ bì</button>
+        <button id="resendBtn" class="btn btn-primary" title="Gửi lại lần gửi gần nhất vào tab qlcl">Gửi lại vào web</button>
+      </section>
+      <div id="actionResult" class="notice hidden"></div>
+
+      <section class="card">
+        <h2>Đã gửi vào web</h2>
+        <ul id="historyList" class="history"></ul>
+        <p id="historyEmpty" class="muted">Chưa có lần gửi nào.</p>
+      </section>
+    </main>
+
+    <footer class="row muted">
+      <span id="deviceAddr">–</span>
+      <span class="spacer"></span>
+      <span id="badMessages" class="hidden"></span>
+    </footer>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

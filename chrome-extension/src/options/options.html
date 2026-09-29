@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <title>Cài đặt – Cân HR-250A</title>
+    <link rel="stylesheet" href="../ui.css" />
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <div class="page">
+      <h1>Cân HR-250A: Cài đặt</h1>
+      <p class="muted">Extension nhận số cân từ hộp HungDuyScaleHR250A qua mạng LAN và gửi vào qlcl.hungduy.vn.</p>
+
+      <section class="card">
+        <h2>Cài đặt hộp cân lần đầu</h2>
+        <p class="muted">
+          Máy tính và hộp cân phải cắm cùng mạng. Bấm <b>Tìm hộp cân</b>, đối chiếu MAC với nhãn dán trên hộp.
+        </p>
+        <div class="grid2">
+          <div>
+            <label for="scanPrefix">Dải mạng</label>
+            <input type="text" id="scanPrefix" placeholder="172.16.10" autocomplete="off" />
+          </div>
+          <div>
+            <label for="scanPort">Port</label>
+            <input type="number" id="scanPort" min="1" max="65535" />
+          </div>
+        </div>
+        <div class="row buttons">
+          <button id="scanBtn" class="btn btn-primary">Tìm hộp cân</button>
+          <span id="scanProgress" class="muted"></span>
+        </div>
+        <div id="scanResult" class="notice hidden"></div>
+        <ul id="deviceList" class="device-list"></ul>
+
+        <div id="netForm" class="hidden">
+          <h2 class="section-gap">Đặt IP cố định cho hộp <span id="netTarget" class="muted"></span></h2>
+          <div class="grid2">
+            <div>
+              <label for="netIp">IP mới của hộp</label>
+              <input type="text" id="netIp" autocomplete="off" />
+            </div>
+            <div>
+              <label for="netGw">Gateway</label>
+              <input type="text" id="netGw" autocomplete="off" />
+            </div>
+            <div>
+              <label for="netMask">Subnet mask</label>
+              <input type="text" id="netMask" value="255.255.255.0" autocomplete="off" />
+            </div>
+            <div>
+              <label for="netDns">DNS (không bắt buộc)</label>
+              <input type="text" id="netDns" autocomplete="off" />
+            </div>
+          </div>
+          <div class="hint">
+            Chỉ đổi được trong 10 phút đầu sau khi cắm điện hộp. Hết giờ thì rút điện, cắm lại hộp rồi làm lại. Hộp sẽ khởi
+            động lại; extension tự tìm hộp ở IP mới rồi mới lưu.
+          </div>
+          <div class="row buttons">
+            <button id="netSaveBtn" class="btn btn-primary">Lưu IP vào hộp</button>
+            <button id="netDhcpBtn" class="btn">Chuyển hộp về DHCP</button>
+            <button id="netCloseBtn" class="btn">Đóng</button>
+          </div>
+          <div id="netResult" class="notice hidden"></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Kết nối hộp cân</h2>
+
+        <label for="deviceIp">IP của hộp cân</label>
+        <input type="text" id="deviceIp" placeholder="172.16.10.xx" autocomplete="off" />
+        <div class="hint">IP ghi trên vỏ hộp. Chưa biết IP thì dùng <b>Tìm hộp cân</b> ở trên.</div>
+
+        <div class="grid2">
+          <div>
+            <label for="wsPort">Port WebSocket</label>
+            <input type="number" id="wsPort" min="1" max="65535" />
+          </div>
+          <div>
+            <label for="connectTimeoutSec">Thời gian chờ khi kiểm tra (giây)</label>
+            <input type="number" id="connectTimeoutSec" min="2" max="30" />
+          </div>
+        </div>
+
+        <label class="check"><input type="checkbox" id="autoConnect" /> Tự kết nối và giữ kết nối</label>
+
+        <h2 class="section-gap">Gửi vào web</h2>
+        <label for="minWeight">Ngưỡng tối thiểu (g)</label>
+        <input type="number" id="minWeight" min="0" step="0.0001" />
+        <div class="hint">
+          Số cân ≤ ngưỡng được coi là đĩa trống: không gửi vào web, và cho phép gửi lại khi cân lần sau. Chỉ gửi khi cân
+          ổn định và ở đơn vị g.
+        </div>
+
+        <label class="check"><input type="checkbox" id="allowLocalhost" /> Cho phép gửi vào web chạy local (localhost / 127.0.0.1)</label>
+        <div class="hint">
+          Chỉ bật khi dev/test web QuanLyChatLuong trên máy (ví dụ https://localhost:7008). Khi bật, tab localhost cũng
+          được chọn để nhận số cân.
+        </div>
+
+        <div id="formResult" class="notice hidden"></div>
+        <div class="row buttons">
+          <button id="saveBtn" class="btn btn-primary">Lưu cài đặt</button>
+          <button id="testBtn" class="btn">Kiểm tra &amp; lưu</button>
+          <span class="muted">Kiểm tra &amp; lưu: chỉ lưu khi hộp trả về số cân.</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Chạy thử (hộp ở chế độ mô phỏng)</h2>
+        <p class="muted">
+          Dùng khi hộp đã cắm mạng nhưng chưa gắn cân thật. Các nút gửi lệnh <code>CMD:SIM:*</code> qua kết nối đang mở
+          (theo IP đã lưu). Số cân mô phỏng có badge <span class="badge badge-sim">MÔ PHỎNG</span> trong popup.
+        </p>
+        <div class="row wrap">
+          <button class="btn" data-cmd="CMD:SIM:ON">Bật mô phỏng</button>
+          <button class="btn" data-cmd="CMD:SIM:OFF">Tắt mô phỏng</button>
+        </div>
+        <div class="row wrap">
+          <input type="number" id="simWeight" value="12.3456" step="0.0001" min="0" style="width: 140px" />
+          <span>g</span>
+          <button id="simPutBtn" class="btn btn-primary">Đặt mẫu</button>
+          <button class="btn" data-cmd="CMD:SIM:REMOVE">Nhấc mẫu</button>
+          <button class="btn" data-cmd="CMD:SIM:OL">Quá tải</button>
+        </div>
+        <div class="row wrap">
+          <button class="btn" data-cmd="CMD:SIM:AUTO:ON">Tự động (lặp đặt/nhấc)</button>
+          <button class="btn" data-cmd="CMD:SIM:AUTO:OFF">Dừng tự động</button>
+          <button class="btn" data-cmd="Z">Về 0</button>
+          <button class="btn" data-cmd="T">Trừ bì</button>
+        </div>
+        <div id="simResult" class="notice hidden"></div>
+      </section>
+    </div>
+
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

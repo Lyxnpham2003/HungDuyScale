@@ -1,0 +1,82 @@
+body {
+  padding: 24px 16px;
+}
+
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.page > h1 {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.page > p {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.card {
+  padding: 16px 18px;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+label.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400;
+  margin-top: 14px;
+}
+
+.section-gap {
+  margin-top: 20px;
+}
+
+.buttons {
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.row.wrap {
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+code {
+  background: var(--bg);
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+@media (max-width: 480px) {
+  .grid2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.device-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+}
+
+.device-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+
+.device-list .ip {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}

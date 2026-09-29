@@ -1,0 +1,10 @@
+{
+  "name": "hdscale-hr250a-extension",
+  "private": true,
+  "type": "module",
+  "description": "Chrome extension: A&D HR-250A balance (via HungDuyScaleHR250A ESP32 gateway) → qlcl.hungduy.vn",
+  "scripts": {
+    "test": "node --test",
+    "fake-device": "node tools/fake-device.mjs"
+  }
+}
