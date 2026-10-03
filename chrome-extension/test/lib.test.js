@@ -7,6 +7,7 @@ import { createPushGate } from "../src/lib/push-gate.js";
 import { pickTargetTab, isTargetTab, targetHosts, urlPatternsFor } from "../src/lib/tab-picker.js";
 import { createBackoff } from "../src/lib/backoff.js";
 import { addEntry } from "../src/lib/history.js";
+import { LOG_MAX, CSV_COLUMNS, logEntry, appendLog, logFromHistory, toCsv, csvFileName } from "../src/lib/weigh-log.js";
 import { validateStaticNet, netSetCommand, formatMac, NET_INFO_COMMAND, NET_DHCP_COMMAND } from "../src/lib/net-config.js";
 import { DEFAULT_PREFIX, normalizePrefix, prefixOf, hostsIn, runPool } from "../src/lib/scan.js";
 
@@ -265,6 +266,63 @@ describe("history", () => {
     const out = addEntry(list, { n: 0 }, 2);
     assert.deepEqual(out, [{ n: 0 }, { n: 1 }]);
     assert.deepEqual(list, [{ n: 1 }, { n: 2 }]);
+  });
+});
+
+describe("weigh-log", () => {
+  const entry = (over = {}) => ({
+    at: new Date(2026, 8, 30, 8, 5, 9).toISOString(),
+    valueText: "12.3456", unit: "g", status: "STABLE", sim: false, source: "auto",
+    ok: true, reason: null, deviceIp: "172.16.10.50", deviceId: "A1B2C3D4E5F6", ...over,
+  });
+
+  test("logEntry keeps only the fields needed for the backup", () => {
+    const e = logEntry({
+      at: "t", source: "resend", deviceIp: "1.2.3.4", deviceId: "MAC",
+      payload: { valueText: "1.0000", unit: "g", Status: "STABLE", sim: true, value: 1, Date: "d" },
+      result: { ok: false, reason: "no-handler", tabId: 3 },
+    });
+    assert.deepEqual(e, {
+      at: "t", valueText: "1.0000", unit: "g", status: "STABLE", sim: true, source: "resend",
+      ok: false, reason: "no-handler", deviceIp: "1.2.3.4", deviceId: "MAC",
+    });
+  });
+
+  test("appendLog adds newest first and caps the length", () => {
+    assert.equal(LOG_MAX, 5000);
+    assert.deepEqual(appendLog([{ n: 1 }, { n: 2 }], { n: 0 }, 2), [{ n: 0 }, { n: 1 }]);
+    assert.deepEqual(appendLog(undefined, { n: 0 }), [{ n: 0 }]);
+  });
+
+  test("logFromHistory converts old history entries", () => {
+    const [e] = logFromHistory([{ at: "t", valueText: "2.0000", unit: "g", sim: true, ok: false, reason: "no-tab", source: "auto", payload: { Status: "STABLE" } }]);
+    assert.equal(e.status, "STABLE");
+    assert.equal(e.reason, "no-tab");
+    assert.deepEqual(logFromHistory(null), []);
+  });
+
+  test("toCsv writes BOM, header, oldest-first rows with local date/time and labels", () => {
+    const csv = toCsv(
+      [entry({ valueText: "2.0000", ok: false, reason: "no-tab", source: "resend", sim: true }), entry()],
+      { "no-tab": "Không có tab, hãy mở web" },
+    );
+    assert.ok(csv.startsWith("﻿"));
+    const lines = csv.slice(1).split("\r\n");
+    assert.equal(lines[0], CSV_COLUMNS.join(","));
+    assert.equal(lines[1], `2026-09-30,08:05:09,12.3456,g,STABLE,,Tự động,Đã gửi,,A1B2C3D4E5F6,172.16.10.50,${entry().at}`);
+    assert.equal(lines[2], `2026-09-30,08:05:09,2.0000,g,STABLE,Có,Gửi lại,Lỗi,"Không có tab, hãy mở web",A1B2C3D4E5F6,172.16.10.50,${entry().at}`);
+    assert.equal(lines[3], "");
+  });
+
+  test("toCsv escapes quotes and blocks formulas but keeps negative numbers", () => {
+    const csv = toCsv([entry({ valueText: "-0.0012", unit: '=HYPERLINK("x")' })]);
+    const row = csv.split("\r\n")[1];
+    assert.ok(row.includes(',-0.0012,"\'=HYPERLINK(""x"")",'));
+  });
+
+  test("toCsv with no entries is just the header; file name carries date and time", () => {
+    assert.equal(toCsv([]), "﻿" + CSV_COLUMNS.join(",") + "\r\n");
+    assert.equal(csvFileName(new Date(2026, 8, 30, 17, 4)), "lich-su-can-HR250A-20260930-1704.csv");
   });
 });
 

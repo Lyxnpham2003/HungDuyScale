@@ -2,7 +2,7 @@
 
 Gateway for an **A&D HR-250A** analytical balance. The ESP32 firmware reads the balance over RS-232C (via a MAX3232) and serves each reading as JSON over a WebSocket on Ethernet. The Chrome extension (`chrome-extension/`) then pushes the reading into the QuanLyChatLuong web (`qlcl.hungduy.vn`). All `.ino` files compile together as one Arduino sketch.
 
-**Target hardware:** ESP32 WT32-ETH01 v1.4 · **Firmware:** 0.4.0 (`firmwareVer`, `HungDuyScaleHR250A.ino`) · **Extension:** 1.1.0 (`manifest.json`)
+**Target hardware:** ESP32 WT32-ETH01 v1.4 · **Firmware:** 0.4.0 (`firmwareVer`, `HungDuyScaleHR250A.ino`) · **Extension:** 1.2.0 (`manifest.json`)
 
 - The sibling project `../HungDuyScale` (XK3118T20 → BLE → mobile app) is kept separate on purpose. Do not merge the two.
 - `D:\work_hung_duy\hung_duy_iot\extension\` (`../extension/`) holds TI TECH's original extensions for reference only; do not modify them.
@@ -47,7 +47,7 @@ arduino-cli compile --fqbn esp32:esp32:wt32-eth01:PartitionScheme=no_ota .
 cd chrome-extension && npm test                  # node --test → test/*.test.js
 npm run fake-device -- --port 8181               # tools/fake-device.mjs, fake gateway (no deps)
 ```
-Test files: `lib`, `connection`, `notifier`, `service`, and `e2e-fake-device` (the e2e test runs against the fake device). Shared fakes are in `test/helpers.js`.
+Test files: `lib` (includes `weigh-log`), `connection`, `notifier`, `service`, and `e2e-fake-device` (the e2e test runs against the fake device). Shared fakes are in `test/helpers.js`.
 
 ## Firmware files
 | File | Role |
@@ -168,9 +168,9 @@ Settings are stored in `chrome.storage.local`. Keys and defaults:
 - `connectTimeoutSec` 5 (clamped to 2–30)
 - `allowLocalhost` false
 
-`history` is also kept in `local`. Live state is written to `chrome.storage.session` under `live` (`status, error, deviceIp, lastReading, badMessages, updatedAt`), at most once every 300 ms.
+`history` (20 entries, with `payload`, for the popup and Resend) is also kept in `local`, next to `weighLog` (`src/lib/weigh-log.js`). `weighLog` is the CSV backup: every delivery, auto or resend, ok or failed, newest first, capped at `LOG_MAX` 5000. Its entries are slim (`at, valueText, unit, status, sim, source, ok, reason, deviceIp, deviceId`) and carry no `payload`. On first load it is seeded from `history`. Options → "Lịch sử cân" exports it through `toCsv()` (UTF-8 BOM, comma, CRLF, oldest first, formula-guarded) and a Blob `<a download>`, so no `downloads` permission is needed. The popup's "Xuất CSV…" only opens `options.html#history`, because a popup closes on a Save As dialog. Live state is written to `chrome.storage.session` under `live` (`status, error, deviceIp, lastReading, badMessages, updatedAt`), at most once every 300 ms.
 
-- **Runtime messages** (`service.js`): `getState`, `connect`, `disconnect`, `applySettings`, `sendCommand {cmd}`, `resend`, `testConnection {deviceIp, wsPort, connectTimeoutSec}`.
+- **Runtime messages** (`service.js`): `getState`, `connect`, `disconnect`, `applySettings`, `sendCommand {cmd}`, `resend`, `testConnection {deviceIp, wsPort, connectTimeoutSec}`, `getWeighLog` → `{entries}`, `clearWeighLog`.
 - **`testConnection {save: true, ...wholeForm}`** is what Options' "Kiểm tra & lưu" sends. It validates the whole form, stores it **only if the probe gets a reading**, then reconnects. Without `save` it only probes.
 - **Network setup actions:**
   - `scanNetwork {prefix, wsPort}`: 32 in parallel, 1.5 s per host, progress in `live.scan`. It returns `devices[{ip, wsPort, id, mode, setupLeftSec, fw, legacy, canSetup}]`.

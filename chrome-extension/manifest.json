@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Cân HR-250A (Hùng Duy)",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Nhận số cân từ cân A&D HR-250A qua hộp HungDuyScaleHR250A và gửi vào qlcl.hungduy.vn.",
   "minimum_chrome_version": "116",
   "permissions": ["storage", "alarms", "scripting"],

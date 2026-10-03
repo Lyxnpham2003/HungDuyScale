@@ -116,6 +116,10 @@ $("connectBtn").addEventListener("click", async () => {
 });
 $("settingsBtn").addEventListener("click", () => chrome.runtime.openOptionsPage());
 $("openSettingsBtn").addEventListener("click", () => chrome.runtime.openOptionsPage());
+// The download runs from the options tab: a popup closes as soon as it loses focus (e.g. a Save As dialog).
+$("exportBtn").addEventListener("click", () =>
+  chrome.tabs.create({ url: chrome.runtime.getURL("src/options/options.html#history") }),
+);
 
 // ── Live updates ──────────────────────────────────────────────────────────────
 

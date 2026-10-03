@@ -76,6 +76,16 @@ code {
   border-top: 1px solid var(--line);
 }
 
+.log-summary {
+  font-variant-numeric: tabular-nums;
+}
+
+.btn-danger {
+  background: var(--err);
+  border-color: var(--err);
+  color: #fff;
+}
+
 .device-list .ip {
   font-weight: 600;
   font-variant-numeric: tabular-nums;

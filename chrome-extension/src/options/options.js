@@ -1,6 +1,8 @@
 import { DEFAULTS, normalizeConfig } from "../lib/config.js";
 import { DEFAULT_PREFIX, prefixOf } from "../lib/scan.js";
 import { formatMac } from "../lib/net-config.js";
+import { toCsv, csvFileName, LOG_MAX } from "../lib/weigh-log.js";
+import { REASON_TEXT } from "../lib/messages.js";
 
 const $ = (id) => document.getElementById(id);
 const send = (msg) => chrome.runtime.sendMessage(msg);
@@ -241,7 +243,86 @@ $("netCloseBtn").addEventListener("click", () => {
   $("netForm").classList.add("hidden");
 });
 
+// ── Weighing log: CSV export / clear ──────────────────────────────────────────
+
+function renderLogSummary(entries) {
+  const box = $("logSummary");
+  if (!entries.length) {
+    box.textContent = "Chưa có lần cân nào được ghi.";
+    return;
+  }
+  const when = (iso) => new Date(iso).toLocaleString("vi-VN", { hour12: false });
+  const failed = entries.filter((e) => !e.ok).length;
+  box.textContent =
+    `${entries.length} lần cân, từ ${when(entries[entries.length - 1].at)} đến ${when(entries[0].at)}` +
+    (failed ? ` · ${failed} lần gửi vào web bị lỗi` : "");
+}
+
+async function loadLog() {
+  const res = await send({ action: "getWeighLog" });
+  const entries = res.ok ? res.entries : [];
+  renderLogSummary(entries);
+  return entries;
+}
+
+function downloadCsv(text, fileName) {
+  const url = URL.createObjectURL(new Blob([text], { type: "text/csv;charset=utf-8" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+$("exportBtn").addEventListener("click", async () => {
+  const btn = $("exportBtn");
+  btn.disabled = true;
+  try {
+    const entries = await loadLog();
+    if (!entries.length) return show("logResult", false, "Chưa có lần cân nào để xuất.");
+    const name = csvFileName();
+    downloadCsv(toCsv(entries, REASON_TEXT), name);
+    show("logResult", true, `Đã xuất ${entries.length} lần cân ra file ${name} (thư mục Tải xuống).`);
+  } catch {
+    show("logResult", false, "Không xuất được CSV. Tải lại trang Cài đặt rồi thử lại.");
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+function setClearConfirm(on) {
+  $("clearLogBtn").classList.toggle("hidden", on);
+  $("clearLogConfirmBtn").classList.toggle("hidden", !on);
+  $("clearLogCancelBtn").classList.toggle("hidden", !on);
+}
+
+$("clearLogBtn").addEventListener("click", () => {
+  setClearConfirm(true);
+  const box = $("logResult");
+  box.textContent = "Xoá toàn bộ lịch sử cân trên máy này? Không khôi phục được. Hãy Xuất CSV trước nếu chưa xuất.";
+  box.className = "notice notice-warn";
+});
+$("clearLogCancelBtn").addEventListener("click", () => {
+  setClearConfirm(false);
+  $("logResult").classList.add("hidden");
+});
+$("clearLogConfirmBtn").addEventListener("click", async () => {
+  setClearConfirm(false);
+  const res = await send({ action: "clearWeighLog" });
+  show("logResult", res.ok, res.ok ? "Đã xoá lịch sử cân." : res.error);
+  await loadLog();
+});
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "local" && changes.weighLog) renderLogSummary(changes.weighLog.newValue ?? []);
+});
+
 // ── Init ──────────────────────────────────────────────────────────────────────
+
+$("logMax").textContent = LOG_MAX;
+loadLog();
 
 chrome.storage.local.get(DEFAULTS).then((raw) => {
   const { config } = normalizeConfig(raw);

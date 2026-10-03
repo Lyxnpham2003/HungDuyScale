@@ -27,8 +27,19 @@ Hộp cân ws://<ip>:81/ ──JSON──► extension ──(ổn định, mẫ
 
 - Mở nhiều tab qlcl thì chỉ gửi vào tab đang active (hoặc tab dùng gần nhất). Tab `localhost` / `127.0.0.1` chỉ được tính khi bật option chạy local.
 - Mọi lần gửi được ghi trong popup (20 lần gần nhất), kèm kết quả: ✓ đã gửi, hoặc ✗ kèm lý do (không có tab, trang chưa có hàm...).
+- Ngoài ra extension giữ **lịch sử cân** 5000 lần gần nhất (xem mục dưới) để xuất CSV sao lưu.
 - Nút **Gửi lại vào web** gửi lại lần gần nhất, dùng khi lỡ bấm Hủy trên popup của web.
 - Nút **Về 0** / **Trừ bì** gửi lệnh `Z` / `T` xuống cân qua hộp.
+
+## Lịch sử cân và xuất CSV (sao lưu)
+
+Mỗi lần gửi số cân vào web (tự động hoặc **Gửi lại**, kể cả lần gửi lỗi) được ghi vào lịch sử cân trong `chrome.storage.local` của máy đó, tối đa **5000 lần gần nhất**. Lần cũ hơn tự bị xoá.
+
+- Popup → **Xuất CSV…** (hoặc ⚙ → mục **Lịch sử cân**) → **Xuất CSV**. File `lich-su-can-HR250A-YYYYMMDD-HHmm.csv` được lưu vào thư mục Tải xuống.
+- Các cột: Ngày, Giờ (giờ máy tính lúc gửi), Khối lượng (đúng số lẻ của cân), Đơn vị, Trạng thái, Mô phỏng, Nguồn (Tự động / Gửi lại), Gửi vào web (Đã gửi / Lỗi), Lý do lỗi, MAC hộp cân, IP hộp cân, Thời điểm (ISO, UTC). Dòng cũ nhất ở trên.
+- File là UTF-8 có BOM, phân cách bằng dấu phẩy, số thập phân dùng dấu chấm. Nếu Excel dồn hết vào một cột (máy đặt vùng Việt Nam), mở bằng **Data → From Text/CSV**, chọn phân cách *Comma*.
+- **Xoá lịch sử…** phải bấm thêm **Chắc chắn xoá** mới xoá. Lịch sử 20 lần trong popup không bị xoá theo.
+- Lịch sử chỉ nằm trên máy đang chạy extension. Gỡ extension là mất lịch sử, nên hãy xuất CSV định kỳ, ví dụ cuối mỗi ca.
 
 ## Chạy thử khi chưa có cân thật
 
@@ -49,17 +60,17 @@ npm test        # = node --test (Node ≥ 22, không cần npm install)
 
 | File | Kiểm tra |
 |---|---|
-| `test/lib.test.js` | config, parse message, quy tắc gửi (push-gate), chọn tab, backoff, lịch sử; kiểm tra IP/gateway/mask trước khi đặt IP, dải mạng quét, pool quét song song, message CMD:NET |
+| `test/lib.test.js` | config, parse message, quy tắc gửi (push-gate), chọn tab, backoff, lịch sử, lịch sử cân + xuất CSV; kiểm tra IP/gateway/mask trước khi đặt IP, dải mạng quét, pool quét song song, message CMD:NET |
 | `test/connection.test.js` | kết nối lại với backoff, ngắt chủ động, probe "Kiểm tra kết nối"; netRequest (trả lời net, bỏ qua reading đến trước, firmware cũ, hết giờ, lỗi) |
 | `test/notifier.test.js` | chỉ inject vào 1 tab, các lý do lỗi |
-| `test/service.test.js` | luồng tích hợp: chuỗi đọc cân → gửi đúng 2 lần, lệnh, gửi lại, cài đặt; scanNetwork, useDevice, setDeviceNetwork (thành công, hết 10 phút, nhập sai, không thấy ở IP mới, MAC khác, DHCP) |
+| `test/service.test.js` | luồng tích hợp: chuỗi đọc cân → gửi đúng 2 lần, lệnh, gửi lại, cài đặt, lịch sử cân (ghi, xoá, chuyển từ history cũ); scanNetwork, useDevice, setDeviceNetwork (thành công, hết 10 phút, nhập sai, không thấy ở IP mới, MAC khác, DHCP) |
 | `test/e2e-fake-device.test.js` | socket thật: hộp giả ⇄ WebSocket ⇄ service; quét 127.0.0.x thấy fake device, đặt IP, hết 10 phút |
 
 ## Cấu trúc
 
 ```
 manifest.json
-src/lib/          logic thuần (không đụng chrome.* / WebSocket): config, reading, push-gate, tab-picker, backoff, history, messages
+src/lib/          logic thuần (không đụng chrome.* / WebSocket): config, reading, push-gate, tab-picker, backoff, history, weigh-log (lịch sử cân + CSV), messages
 src/background/   connection (WebSocket + kết nối lại), notifier (inject vào tab), service (nối tất cả), main (gắn API Chrome)
 src/popup/        popup: số cân, trạng thái, nút lệnh, lịch sử
 src/options/      cài đặt + panel chạy thử
@@ -69,5 +80,5 @@ web-snippet/      mẫu window.HR250A_onData cho web
 
 Dữ liệu thiết bị gửi lên (từ firmware `readingToJson()`):
 ```json
-{"type":"reading","device":"HR250A","header":"ST","stable":true,"unstable":false,"overload":false,"counting":false,"count":null,"value":12.3456,"unit":"g","weight":"12.3456 g","raw":"ST,+00012.3456  g","uptime":12345,"sim":true}
+{"type":"reading","device":"HR250A","header":"ST","stable":true,"unstable":false,"overload":false,"counting":false,"count":null,"value":12.3456,"unit":"g","weight":"12.3456 g","raw":"ST,+012.3456  g","uptime":12345,"sim":true}
 ```

@@ -114,6 +114,46 @@ describe("service", () => {
     assert.equal(h[1].ok, true);
   });
 
+  test("keeps every delivery in the weighing log, beyond the 20-entry history", async () => {
+    const { ws, service, storage } = await setup({ notifyResult: { ok: false, reason: "no-tab" } });
+    ws().open();
+    for (let i = 1; i <= 25; i++) await feed(ws(), reading("ST", i, { id: "A1B2C3D4E5F6" }), reading("ST", 0));
+    assert.equal(storage.local.data.history.length, 20);
+    const log = storage.local.data.weighLog;
+    assert.equal(log.length, 25);
+    assert.deepEqual(log[0], {
+      at: new Date(2026, 8, 24, 9, 0, 0).toISOString(),
+      valueText: "25.0000", unit: "g", status: "STABLE", sim: false, source: "auto",
+      ok: false, reason: "no-tab", deviceIp: "10.0.0.5", deviceId: "A1B2C3D4E5F6",
+    });
+    assert.equal(log[24].valueText, "1.0000");
+    assert.equal(log[0].payload, undefined);
+
+    await service.handleRuntimeMessage({ action: "resend" });
+    const res = await service.handleRuntimeMessage({ action: "getWeighLog" });
+    assert.equal(res.entries.length, 26);
+    assert.equal(res.entries[0].source, "resend");
+  });
+
+  test("clearWeighLog empties the log but not the popup history", async () => {
+    const { ws, service, storage } = await setup();
+    ws().open();
+    await feed(ws(), reading("ST", 3));
+    assert.deepEqual(await service.handleRuntimeMessage({ action: "clearWeighLog" }), { ok: true });
+    assert.deepEqual(storage.local.data.weighLog, []);
+    assert.equal(storage.local.data.history.length, 1);
+    assert.deepEqual((await service.handleRuntimeMessage({ action: "getWeighLog" })).entries, []);
+  });
+
+  test("starts the weighing log from an existing history after the update", async () => {
+    const old = { at: "2026-09-20T02:00:00.000Z", valueText: "7.1000", unit: "g", sim: false, ok: true, reason: null, source: "auto", payload: { Status: "STABLE" } };
+    const { service } = await setup({ stored: { deviceIp: "10.0.0.5", history: [old] } });
+    const { entries } = await service.handleRuntimeMessage({ action: "getWeighLog" });
+    assert.equal(entries.length, 1);
+    assert.equal(entries[0].valueText, "7.1000");
+    assert.equal(entries[0].status, "STABLE");
+  });
+
   test("counts bad messages instead of treating them as readings", async () => {
     const { ws, notified, storage, advance } = await setup();
     ws().open();

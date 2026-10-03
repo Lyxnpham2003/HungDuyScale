@@ -170,8 +170,8 @@ export function probeDevice({ WebSocketImpl, url, timeoutMs, setTimeoutFn = setT
 }
 
 // One-shot CMD:NET:* exchange (scanner and IP setup). Sends `command` on open and
-// resolves with the first {"type":"net"} reply. Readings that arrive first (the box
-// sends its last reading on connect) are skipped, but remembered: a box that only
+// resolves with the first {"type":"net"} reply. Fresh polled readings that arrive
+// first are skipped, but remembered: a box that only
 // ever sends readings is firmware 0.3.x ("legacy"). Never rejects.
 export function netRequest({ WebSocketImpl, url, command, timeoutMs, setTimeoutFn = setTimeout, clearTimeoutFn = clearTimeout }) {
   return new Promise((resolve) => {

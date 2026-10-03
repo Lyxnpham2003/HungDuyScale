@@ -43,6 +43,19 @@ header {
   margin: -2px 0 10px;
 }
 
+.history-head {
+  margin-bottom: 8px;
+}
+
+.history-head h2 {
+  margin: 0;
+}
+
+.btn-small {
+  padding: 3px 8px;
+  font-size: 12px;
+}
+
 .history {
   list-style: none;
   margin: 0;

@@ -108,6 +108,23 @@
         </div>
       </section>
 
+      <section class="card" id="history">
+        <h2>Lịch sử cân (sao lưu)</h2>
+        <p class="muted">
+          Mỗi lần gửi số cân vào web (kể cả gửi lỗi và gửi lại) đều được ghi lại trên máy này, tối đa
+          <b id="logMax">5000</b> lần gần nhất; cũ hơn sẽ tự xoá. Nên xuất CSV định kỳ (ví dụ cuối mỗi ca) để phòng
+          khi web mất dữ liệu.
+        </p>
+        <div id="logSummary" class="log-summary">–</div>
+        <div class="row buttons">
+          <button id="exportBtn" class="btn btn-primary">Xuất CSV</button>
+          <button id="clearLogBtn" class="btn">Xoá lịch sử…</button>
+          <button id="clearLogConfirmBtn" class="btn btn-danger hidden">Chắc chắn xoá</button>
+          <button id="clearLogCancelBtn" class="btn hidden">Không xoá</button>
+        </div>
+        <div id="logResult" class="notice hidden"></div>
+      </section>
+
       <section class="card">
         <h2>Chạy thử (hộp ở chế độ mô phỏng)</h2>
         <p class="muted">

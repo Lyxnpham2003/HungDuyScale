@@ -5,6 +5,7 @@ import { DEFAULTS, normalizeConfig, deviceUrl, isIPv4 } from "../lib/config.js";
 import { parseDeviceMessage, parseNetMessage, toWebPayload, DEVICE_NAME } from "../lib/reading.js";
 import { createPushGate } from "../lib/push-gate.js";
 import { addEntry } from "../lib/history.js";
+import { logEntry, appendLog, logFromHistory } from "../lib/weigh-log.js";
 import { REASON_TEXT, NET_ERROR_TEXT } from "../lib/messages.js";
 import { targetHosts } from "../lib/tab-picker.js";
 import { normalizePrefix, hostsIn, runPool } from "../lib/scan.js";
@@ -32,6 +33,7 @@ export function createService({
   let config = { ...DEFAULTS };
   let gate = createPushGate(config);
   let history = [];
+  let weighLog = [];
   let live = {
     status: "disconnected",
     error: null,
@@ -78,9 +80,11 @@ export function createService({
   // ── Config / history ────────────────────────────────────────────────────────
 
   async function loadConfig() {
-    const raw = await storage.local.get({ ...DEFAULTS, history: [] });
+    const raw = await storage.local.get({ ...DEFAULTS, history: [], weighLog: null });
     config = normalizeConfig(raw).config;
     history = Array.isArray(raw.history) ? raw.history : [];
+    // No log yet (first run after the update): start it from the existing history.
+    weighLog = Array.isArray(raw.weighLog) ? raw.weighLog : logFromHistory(history);
     gate = createPushGate(config);
     setLive({ deviceIp: config.deviceIp }, true);
   }
@@ -136,8 +140,9 @@ export function createService({
 
   async function deliver(payload, source) {
     const result = await notifier(payload, targetHosts(config));
+    const at = now().toISOString();
     history = addEntry(history, {
-      at: now().toISOString(),
+      at,
       valueText: payload.valueText,
       unit: payload.unit,
       sim: !!payload.sim,
@@ -146,7 +151,11 @@ export function createService({
       source,
       payload,
     });
-    await storage.local.set({ history });
+    weighLog = appendLog(
+      weighLog,
+      logEntry({ at, payload, result, source, deviceIp: config.deviceIp, deviceId: live.lastReading?.id ?? "" }),
+    );
+    await storage.local.set({ history, weighLog });
     return result;
   }
 
@@ -166,6 +175,14 @@ export function createService({
     switch (msg.action) {
       case "getState":
         return { ok: true, live, config, history };
+
+      case "getWeighLog":
+        return { ok: true, entries: weighLog };
+
+      case "clearWeighLog":
+        weighLog = [];
+        await storage.local.set({ weighLog });
+        return { ok: true };
 
       case "connect":
         if (!config.deviceIp) return { ok: false, error: "Chưa cấu hình IP của hộp cân." };
